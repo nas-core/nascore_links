@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NasCore Links - 网址导航</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>NasCore Links</h1>
+      <div class="user-info">
+        <span>当前用户: {{.User}}</span>
+        {{if .IsAdmin}}
+        <span class="admin-badge">管理员</span>
+        {{end}}
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button id="addCategoryBtn" class="btn btn-primary">+ 添加分类</button>
+      <button id="addLinkBtn" class="btn btn-secondary">+ 添加链接</button>
+    </div>
+
+    <!-- 搜索区域 -->
+    <div class="search-container">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="搜索网址、标题或描述..." autocomplete="off">
+        <button id="clearSearchBtn" class="clear-btn" style="display: none;">&times;</button>
+      </div>
+      <div class="search-buttons">
+        <button id="quickSearchBtn" class="btn btn-search">快速检索</button>
+        <button id="bingSearchBtn" class="btn btn-search">Bing搜索</button>
+        <button id="googleSearchBtn" class="btn btn-search">Google搜索</button>
+      </div>
+    </div>
+
+    <!-- 公共区域 -->
+    <div class="public-section">
+      <h3 class="section-title">
+        <span>🌍 公共导航</span>
+        <div class="section-info">管理员创建的公开链接</div>
+      </h3>
+      <div class="public-links" id="publicLinks">
+        <!-- 公共链接将动态加载 -->
+      </div>
+    </div>
+
+    <!-- 分类区域 -->
+    <div class="categories-section">
+      <h3 class="section-title">
+        <span>📁 分类导航</span>
+        <div class="section-info">按分类查看链接</div>
+      </h3>
+      <div class="tabs-container">
+        <div class="tabs" id="categoryTabs">
+          <div class="tab active" data-category="all">全部</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="links-grid" id="linksGrid">
+          <!-- 分类链接将动态加载 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分类编辑模态框 -->
+  <div id="categoryModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="categoryModalTitle">添加分类</h3>
+        <span class="close" id="closeCategoryModal">&times;</span>
+      </div>
+      <form id="categoryForm">
+        <input type="hidden" id="categoryId" name="id">
+        <div class="form-group">
+          <label for="categoryName">分类名称:</label>
+          <input type="text" id="categoryName" name="name" required>
+        </div>
+        <div class="form-group">
+          <label for="categorySortNum">排序号:</label>
+          <input type="number" id="categorySortNum" name="sort_num" value="0">
+        </div>
+        {{if .IsAdmin}}
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="categoryIsPublic" name="is_public">
+            设为公开分类（所有用户可见）
+          </label>
+        </div>
+        {{end}}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">保存</button>
+          <button type="button" class="btn btn-secondary" id="cancelCategoryEdit">取消</button>
+          <button type="button" class="btn btn-danger" id="deleteCategoryBtn" style="display: none;">删除</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 链接编辑模态框 -->
+  <div id="linkModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="linkModalTitle">添加链接</h3>
+        <span class="close" id="closeLinkModal">&times;</span>
+      </div>
+      <form id="linkForm">
+        <input type="hidden" id="linkId" name="id">
+        <div class="form-group">
+          <label for="linkTitle">标题:</label>
+          <input type="text" id="linkTitle" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="linkUrl">网址:</label>
+          <input type="url" id="linkUrl" name="url" required>
+        </div>
+        <div class="form-group">
+          <label for="linkDescription">描述:</label>
+          <textarea id="linkDescription" name="description" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="linkCategory">分类:</label>
+          <select id="linkCategory" name="category_id" required>
+            <option value="">选择分类</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="linkSortNum">排序号:</label>
+          <input type="number" id="linkSortNum" name="sort_num" value="0">
+        </div>
+        {{if .IsAdmin}}
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="linkIsPublic" name="is_public">
+            设为公开链接（所有用户可见）
+          </label>
+        </div>
+        {{end}}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">保存</button>
+          <button type="button" class="btn btn-secondary" id="cancelLinkEdit">取消</button>
+          <button type="button" class="btn btn-danger" id="deleteLinkBtn" style="display: none;">删除</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Loading 指示器 -->
+  <div id="loading" class="loading" style="display: none;">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <script>
+    // 全局变量
+    window.appData = {
+      user: '{{.User}}',
+      isAdmin: {{.IsAdmin}},
+    currentCategory: 'all',
+      categories: [],
+        links: []
+        };
+  </script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/modal.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>
